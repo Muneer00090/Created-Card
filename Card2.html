@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multi-Step Registration</title>
+
+<style>
+*{
+  box-sizing:border-box;
+  font-family:Segoe UI, Tahoma, sans-serif;
+}
+
+body{
+  margin:0;
+  min-height:100vh;
+  background:linear-gradient(135deg,#2193b0,#6dd5ed);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:20px;
+}
+
+.container{
+  width:100%;
+  max-width:420px;
+  background:rgba(255,255,255,0.15);
+  backdrop-filter:blur(20px);
+  border-radius:18px;
+  padding:25px;
+  color:#fff;
+  box-shadow:0 15px 35px rgba(0,0,0,0.3);
+}
+
+.step-indicator{
+  font-size:14px;
+  margin-bottom:10px;
+  opacity:0.8;
+}
+
+h2{
+  margin:0 0 15px;
+}
+
+.step{
+  display:none;
+}
+
+.step.active{
+  display:block;
+}
+
+input, select, textarea{
+  width:100%;
+  padding:12px;
+  margin-bottom:15px;
+  border:none;
+  border-radius:12px;
+  background:rgba(255,255,255,0.25);
+  color:#fff;
+}
+
+option{
+  background:#333;
+}
+
+.buttons{
+  display:flex;
+  gap:10px;
+}
+
+button{
+  flex:1;
+  padding:12px;
+  border:none;
+  border-radius:14px;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+.next{
+  background:#fff;
+  color:#2193b0;
+}
+
+.back{
+  background:rgba(255,255,255,0.3);
+  color:#fff;
+}
+
+.list{
+  width:100%;
+  max-width:420px;
+  margin-top:20px;
+}
+
+.item{
+  background:rgba(255,255,255,0.15);
+  padding:12px;
+  border-radius:12px;
+  margin-bottom:10px;
+  cursor:pointer;
+}
+
+.details{
+  display:none;
+  margin-top:8px;
+  font-size:14px;
+  background:rgba(255,255,255,0.1);
+  padding:10px;
+  border-radius:10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <div class="step-indicator" id="indicator">Step 1 of 3</div>
+
+  <!-- STEP 1 -->
+  <div class="step active">
+    <h2>Personal Info</h2>
+    <input id="fullName" placeholder="Full Name">
+    <input id="phone" placeholder="Phone Number">
+    <input id="email" placeholder="Email">
+    <button class="next" onclick="next()">Next</button>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step">
+    <h2>Background</h2>
+    <select id="gender">
+      <option value="">Select Gender</option>
+      <option>Male</option>
+      <option>Female</option>
+    </select>
+    <input id="country" placeholder="Country">
+    <textarea id="address" placeholder="Address"></textarea>
+    <div class="buttons">
+      <button class="back" onclick="prev()">Back</button>
+      <button class="next" onclick="next()">Next</button>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="step">
+    <h2>Emergency Contact</h2>
+    <input id="contactName" placeholder="Contact Name">
+    <input id="contactPhone" placeholder="Contact Phone">
+    <div class="buttons">
+      <button class="back" onclick="prev()">Back</button>
+      <button class="next" onclick="save()">Submit</button>
+    </div>
+  </div>
+</div>
+
+<div class="list" id="list"></div>
+
+<script>
+let stepIndex = 0;
+const steps = document.querySelectorAll(".step");
+const indicator = document.getElementById("indicator");
+
+let records = JSON.parse(localStorage.getItem("records") || "[]");
+
+function updateSteps(){
+  for(let i=0;i<steps.length;i++){
+    steps[i].classList.remove("active");
+    if(i===stepIndex){
+      steps[i].classList.add("active");
+    }
+  }
+  indicator.textContent = "Step " + (stepIndex+1) + " of " + steps.length;
+}
+
+function next(){
+  if(stepIndex < steps.length-1){
+    stepIndex++;
+    updateSteps();
+  }
+}
+
+function prev(){
+  if(stepIndex > 0){
+    stepIndex--;
+    updateSteps();
+  }
+}
+
+function save(){
+  const data = {
+    name: document.getElementById("fullName").value,
+    phone: document.getElementById("phone").value,
+    email: document.getElementById("email").value,
+    gender: document.getElementById("gender").value,
+    country: document.getElementById("country").value,
+    address: document.getElementById("address").value,
+    emergency: document.getElementById("contactName").value + " - " +
+               document.getElementById("contactPhone").value
+  };
+
+  if(data.name === ""){
+    alert("Name required");
+    return;
+  }
+
+  records.push(data);
+  localStorage.setItem("records", JSON.stringify(records));
+
+  resetForm();
+  renderList();
+
+  stepIndex = 0;
+  updateSteps();
+}
+
+function resetForm(){
+  document.querySelectorAll("input, textarea, select").forEach(el=>{
+    el.value="";
+  });
+}
+
+function renderList(){
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+
+  records.forEach(r=>{
+    const div = document.createElement("div");
+    div.className = "item";
+    div.textContent = r.name;
+
+    const details = document.createElement("div");
+    details.className = "details";
+    details.innerHTML =
+      "<p><b>Phone:</b> "+r.phone+"</p>" +
+      "<p><b>Email:</b> "+r.email+"</p>" +
+      "<p><b>Gender:</b> "+r.gender+"</p>" +
+      "<p><b>Country:</b> "+r.country+"</p>" +
+      "<p><b>Address:</b> "+r.address+"</p>" +
+      "<p><b>Emergency:</b> "+r.emergency+"</p>";
+
+    div.onclick = function(){
+      details.style.display =
+        details.style.display==="block"?"none":"block";
+    };
+
+    list.appendChild(div);
+    list.appendChild(details);
+  });
+}
+
+renderList();
+</script>
+
+</body>
+</html>
